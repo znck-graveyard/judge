@@ -1,7 +1,8 @@
 <?php namespace Judge\Runners;
 
-use Illuminate\Contracts\Filesystem\Factory;
-use Judge\Contracts\Compiler;
+use Judge\Contracts\Analyzer;
+use Judge\Contracts\Runner;
+use Judge\Contracts\Sandbox;
 
 /**
  * This file belongs to judge.
@@ -9,168 +10,48 @@ use Judge\Contracts\Compiler;
  * Author: Rahul Kadyan, <hi@znck.me>
  * Find license in root directory of this project.
  */
-abstract class AbstractRunner
+abstract class AbstractRunner implements Runner
 {
     /**
-     * @type \Judge\Contracts\Compiler
-     */
-    protected $compiler;
-
-    /**
-     * @type string Executable binary.
-     */
-    protected $binary;
-
-    /**
-     * @type string
+     * @type \Judge\Contracts\Sandbox
      */
     private $sandbox;
-
     /**
-     * @type \Illuminate\Contracts\Filesystem\Factory
+     * @type \Judge\Contracts\Analyzer
      */
-    private $filesystem;
-
-    /**
-     * @type double
-     */
-    protected $runTime;
+    private $analyzer;
 
     /**
      * AbstractRunner constructor.
      *
-     * @param \Illuminate\Contracts\Filesystem\Factory $filesystem
+     * @param \Judge\Contracts\Sandbox  $sandbox
+     * @param \Judge\Contracts\Analyzer $analyzer
      */
-    public function __construct(Factory $filesystem)
+    public function __construct(Sandbox $sandbox, Analyzer $analyzer)
     {
-        $this->filesystem = $filesystem;
+        $this->sandbox = $sandbox;
+        $this->analyzer = $analyzer;
     }
 
     /**
-     * @param \Judge\Contracts\Compiler $compiler
+     * @param string $binary executable file
+     * @param string $input  input text (input for stdin)
+     * @param string $output output text (output from stdout)
+     * @param string $errors error text (output from stderr)
      *
-     * @return void
+     * @return int exit code
      */
-    public function setCompiler(Compiler $compiler)
+    public function execute($binary, $input, &$output, &$errors = null)
     {
-        $this->compiler = $compiler;
-    }
+        $this->sandbox->put('cin.txt', $input);
+        $inFile = 'cin.txt';
+        $outFile = 'cout.txt';
+        $errorFile = 'cerr.txt';
 
-    /**
-     * @return \Judge\Contracts\Compiler
-     */
-    public function getCompiler()
-    {
-        return $this->compiler;
-    }
+        $return = $this->analyzer->analyze("{$binary} < {$inFile} > {$outFile} 2> {$errorFile}");
 
-    /**
-     * @param string $source Source code.
-     *
-     * @param null   $errors
-     * @param        $exitCode
-     *
-     * @return string executable binary.
-     */
-    public function compile($source, &$errors = null, &$exitCode = nill)
-    {
-        $this->compiler->setOutputFile($this->absolutePath($this->randomFile()));
-
-        $sourceFile = $this->randomFile();
-        $this->storage()->put($sourceFile, $source);
-
-        $this->binary = $this->compiler->compile($this->absolutePath($sourceFile), $errors, $exitCode);
-
-        return $exitCode;
-    }
-
-    public function  runTime()
-    {
-        return $this->runTime;
-    }
-
-    /**
-     * @param string $command
-     * @param string $input
-     * @param string $output
-     * @param string $errors
-     *
-     * @return void
-     */
-    protected function executeCommand($command, $input, &$output, &$errors)
-    {
-        $inFile = $this->randomFile();
-        $outFile = $this->randomFile();
-        $errorFile = $this->randomFile();
-
-        $this->storage()->put($inFile, $input);
-
-        $return = $this->doExecute($command, $inFile, $outFile, $errorFile);
-
-        $output = $this->storage()->get($outFile);
-        $errors = $this->storage()->get($errorFile);
-
-        return $return;
-    }
-
-    /**
-     * @return string
-     */
-    protected function randomFile()
-    {
-        return "{$this->sandbox}/" . str_random(36);
-    }
-
-    /**
-     * @return void
-     */
-    protected function createSandbox()
-    {
-        $this->sandbox = str_random();
-        $this->storage()->makeDirectory($this->sandbox);
-    }
-
-    /**
-     * @return \Illuminate\Contracts\Filesystem\Filesystem
-     */
-    protected function storage()
-    {
-        return $this->filesystem->disk('local');
-    }
-
-    /**
-     * @return void
-     */
-    protected function destroySandbox()
-    {
-        $this->storage()->deleteDirectory($this->sandbox);
-    }
-
-    /**
-     * @param string $filename
-     *
-     * @return string
-     */
-    protected function absolutePath($filename)
-    {
-        return $this->storage()->getDriver()->getAdapter()->getPathPrefix() . "/{$filename}";
-    }
-
-    /**
-     * @param $command
-     * @param $inFile
-     * @param $outFile
-     * @param $errorFile
-     *
-     * @return mixed
-     */
-    private function doExecute($command, $inFile, $outFile, $errorFile)
-    {
-        $inFile = $this->absolutePath($inFile);
-        $outFile = $this->absolutePath($outFile);
-        $errorFile = $this->absolutePath($errorFile);
-
-        exec("{$command} < {$inFile} > {$outFile} 2> {$errorFile}", $o, $return);
+        $output = $this->sandbox->get($outFile);
+        $errors = $this->sandbox->get($errorFile);
 
         return $return;
     }

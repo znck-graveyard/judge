@@ -21,16 +21,4 @@ interface Compiler
      * @return string compiled executable file
      */
     public function compile($source, &$output, &$exit_code);
-
-    /**
-     * @param string $output
-     *
-     * @return void
-     */
-    public function setOutputFile($output);
-
-    /**
-     * @return string
-     */
-    public function getOutputFile();
 }

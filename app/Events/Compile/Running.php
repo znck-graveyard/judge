@@ -2,22 +2,34 @@
 
 namespace Judge\Events\Compile;
 
-use Judge\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Judge\Events\Event;
+use Judge\Problems\Solution;
+use Judge\User;
 
 class Running extends Event
 {
     use SerializesModels;
 
     /**
+     * @type \Judge\User
+     */
+    public $user;
+    /**
+     * @type \Judge\Problems\Solution
+     */
+    public $solution;
+
+    /**
      * Create a new event instance.
      *
-     * @return void
+     * @param \Judge\User              $user
+     * @param \Judge\Problems\Solution $solution
      */
-    public function __construct()
+    public function __construct(User $user, Solution $solution)
     {
-        //
+        $this->user = $user;
+        $this->solution = $solution;
     }
 
     /**
@@ -27,6 +39,6 @@ class Running extends Event
      */
     public function broadcastOn()
     {
-        return [];
+        return ["user.{$this->user->id}"];
     }
 }

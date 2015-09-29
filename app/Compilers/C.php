@@ -11,4 +11,6 @@ use Judge\Contracts\Compiler;
 class C extends AbstractCompiler implements Compiler
 {
     protected $command = 'gcc -o :output :input';
+
+    protected $extension = 'c';
 }

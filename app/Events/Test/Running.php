@@ -9,6 +9,7 @@ use Judge\User;
 class Running extends Event
 {
     use SerializesModels;
+
     /**
      * @type \Judge\User
      */

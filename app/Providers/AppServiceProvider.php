@@ -3,6 +3,7 @@
 namespace Judge\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Judge\Contracts\Sandbox;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -13,7 +14,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        $this->app->bind(Sandbox::class, \Judge\Sandbox::class);
     }
 
     /**

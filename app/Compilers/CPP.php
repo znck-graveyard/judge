@@ -11,4 +11,6 @@ use Judge\Contracts\Compiler;
 class CPP extends AbstractCompiler implements Compiler
 {
     protected $command = "g++ -o :output :input";
+
+    protected $extension = 'cpp';
 }

@@ -9,4 +9,5 @@
 return [
     'c'   => \Judge\Compilers\C::class,
     'c++' => \Judge\Compilers\CPP::class,
+    'python' => \Judge\Compilers\Python::class,
 ];

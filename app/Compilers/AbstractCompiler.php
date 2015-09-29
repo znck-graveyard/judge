@@ -1,42 +1,43 @@
 <?php namespace Judge\Compilers;
 
-    /**
-     * This file belongs to judge.
-     *
-     * Author: Rahul Kadyan, <hi@znck.me>
-     * Find license in root directory of this project.
-     */
+/**
+ * This file belongs to judge.
+ *
+ * Author: Rahul Kadyan, <hi@znck.me>
+ * Find license in root directory of this project.
+ */
+use Judge\Contracts\Compiler;
+use Judge\Contracts\Sandbox;
+use Judge\Exceptions\CompilationFailedException;
+
 /**
  * Class AbstractCompiler
  *
  * @package Judge\Compilers
  */
-abstract class AbstractCompiler
+abstract class AbstractCompiler implements Compiler
 {
     /**
-     * @type string output filename
+     * @type string
      */
-    protected $output;
-
     protected $command = 'compiler -o :output :input';
 
+    protected $extension = 'ext';
     /**
-     * @param string $output
-     *
-     * @return void
+     * @type \Judge\Contracts\Sandbox
      */
-    public function setOutputFile($output)
-    {
-        $this->output = $output;
-    }
+    protected $sandbox;
 
     /**
-     * @return string
+     * AbstractCompiler constructor.
+     *
+     * @param \Judge\Contracts\Sandbox $sandbox
      */
-    public function getOutputFile()
+    public function __construct(Sandbox $sandbox)
     {
-        return $this->output;
+        $this->sandbox = $sandbox;
     }
+
 
     /**
      * @param string $source source code file
@@ -44,19 +45,35 @@ abstract class AbstractCompiler
      * @param int    $exit_code
      *
      * @return string compiled executable file
+     * @throws \Judge\Exceptions\CompilationFailedException
      */
     public function compile($source, &$output = null, &$exit_code = null)
     {
         $command = $this->getCommand();
-        foreach (['input' => $source, 'output' => $this->output] as $key => $value) {
+
+        $this->sandbox->put('sourcecode.' . $this->extension, $source);
+        $params = [
+            'input'  => 'sourcecode.' . $this->extension,
+            'output' => 'a.out',
+        ];
+
+        foreach ($params as $key => $value) {
             $command = str_replace(':' . $key, $value, $command);
         }
 
+        chdir($this->sandbox->rootDirectory());
         exec($command, $output, $exit_code);
 
-        return $this->output;
+        if (0 !== $exit_code) {
+            throw new CompilationFailedException(implode("\n", $output));
+        }
+
+        return $params['output'];
     }
 
+    /**
+     * @return string
+     */
     protected function getCommand()
     {
         return $this->command;
