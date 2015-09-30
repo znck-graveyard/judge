@@ -6,3 +6,4 @@ php:
   - nightly
 install:
   - sudo apt-get install make g++ gcc python
+  - composer install
